@@ -138,27 +138,6 @@ function Chat({ user }) {
             )}
             <div ref={messagesEndRef} />
           </div>
-          
-          {/* 디버깅용 버튼 */}
-          <div style={{ marginBottom: 8 }}>
-            <button 
-              onClick={() => {
-                console.log('강제 입장 버튼 클릭');
-                const joinMessage = `${user.nickname}님이 입장하셨습니다.`;
-                socket.emit('notice', joinMessage);
-                setHasJoined(true);
-              }}
-              style={{ 
-                padding: '4px 8px', 
-                backgroundColor: '#ffc107', 
-                border: 'none', 
-                borderRadius: '4px',
-                fontSize: '12px'
-              }}
-            >
-              강제 입장 (디버깅)
-            </button>
-          </div>
           <form onSubmit={handleSubmit} style={{ display: 'flex' }}>
             <input
               type="text"
