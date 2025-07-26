@@ -21,8 +21,11 @@ function Chat({ user }) {
   // 사용자 정보가 있고 아직 입장하지 않았다면 자동 입장
   useEffect(() => {
     if (user?.nickname && !hasJoined && isConnected) {
+      console.log('자동 입장 시도:', user.nickname);
       setTimeout(() => {
-        socket.emit('notice', `${user.nickname}님이 입장하셨습니다.`);
+        const joinMessage = `${user.nickname}님이 입장하셨습니다.`;
+        console.log('입장 메시지 전송:', joinMessage);
+        socket.emit('notice', joinMessage);
         setHasJoined(true);
       }, 500);
     }
