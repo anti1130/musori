@@ -143,20 +143,36 @@ io.on('connection', (socket) => {
     io.emit('chat message', msg);
   });
 
-  // 입장 알림 메시지 처리
+  // 입장/퇴장 알림 메시지 처리
   socket.on('notice', (msg) => {
-    console.log('입장 알림 수신:', msg);
+    console.log('알림 메시지 수신:', msg);
     console.log('현재 소켓 ID:', socket.id);
     
-    // 닉네임 추출 (예: "홍길동님이 입장하셨습니다." -> "홍길동")
-    const nickname = msg.replace('님이 입장하셨습니다.', '');
-    console.log('추출된 닉네임:', nickname);
+    if (msg.includes('입장하셨습니다')) {
+      // 입장 메시지 처리
+      const nickname = msg.replace('님이 입장하셨습니다.', '');
+      console.log('추출된 닉네임 (입장):', nickname);
+      
+      onlineUsers.set(socket.id, nickname);
+      console.log('온라인 유저에 추가됨:', nickname);
+      console.log('현재 온라인 유저 목록:', Array.from(onlineUsers.values()));
+    } else if (msg.includes('퇴장하셨습니다')) {
+      // 퇴장 메시지 처리
+      const nickname = msg.replace('님이 퇴장하셨습니다.', '');
+      console.log('추출된 닉네임 (퇴장):', nickname);
+      
+      // 해당 닉네임을 가진 유저를 온라인 리스트에서 제거
+      for (const [socketId, userNickname] of onlineUsers.entries()) {
+        if (userNickname === nickname) {
+          onlineUsers.delete(socketId);
+          console.log('온라인 유저에서 제거됨:', nickname);
+          break;
+        }
+      }
+      console.log('현재 온라인 유저 목록:', Array.from(onlineUsers.values()));
+    }
     
-    onlineUsers.set(socket.id, nickname);
-    console.log('온라인 유저에 추가됨:', nickname);
-    console.log('현재 온라인 유저 목록:', Array.from(onlineUsers.values()));
-    
-    // 입장 메시지 브로드캐스트
+    // 알림 메시지 브로드캐스트
     io.emit('notice', msg);
     
     // 업데이트된 유저 리스트 브로드캐스트
