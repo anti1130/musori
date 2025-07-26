@@ -1,25 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Chat from './components/Chat';
 import Login from './components/Login';
 import Register from './components/Register';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentPage, setCurrentPage] = useState('login'); // 'login' or 'register'
+  const [currentPage, setCurrentPage] = useState('login');
   const [user, setUser] = useState(null);
 
+  // 페이지 로드 시 저장된 토큰 확인
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    
+    if (token && savedUser) {
+      try {
+        const userData = JSON.parse(savedUser);
+        setUser(userData);
+        setIsLoggedIn(true);
+      } catch (error) {
+        console.error('저장된 사용자 정보 파싱 에러:', error);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
+    }
+  }, []);
+
   const handleLogin = (userData) => {
-    // 로그인 성공 시 (나중에 서버 연동)
+    console.log('로그인 성공:', userData);
     setUser(userData);
     setIsLoggedIn(true);
-    console.log('로그인 성공:', userData);
   };
 
   const handleRegister = (userData) => {
-    // 회원가입 성공 시 (나중에 서버 연동)
+    console.log('회원가입 성공:', userData);
     setUser(userData);
     setIsLoggedIn(true);
-    console.log('회원가입 성공:', userData);
   };
 
   const handleLogout = () => {
@@ -40,7 +56,7 @@ function App() {
   };
 
   // 로그인된 경우 채팅 페이지 표시
-  if (isLoggedIn) {
+  if (isLoggedIn && user) {
     return (
       <div>
         <div style={{ 
