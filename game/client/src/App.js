@@ -28,18 +28,20 @@ function App() {
 
   const handleLogin = (userData) => {
     console.log('로그인 성공:', userData);
+    console.log('로그인 전 상태:', { isLoggedIn, user, currentPage });
     setUser(userData);
     setIsLoggedIn(true);
-    // hasJoined 상태를 초기화하기 위해 Chat 컴포넌트를 다시 마운트
     setCurrentPage('chat');
+    console.log('로그인 후 상태 설정 완료');
   };
 
   const handleRegister = (userData) => {
     console.log('회원가입 성공:', userData);
+    console.log('회원가입 전 상태:', { isLoggedIn, user, currentPage });
     setUser(userData);
     setIsLoggedIn(true);
-    // hasJoined 상태를 초기화하기 위해 Chat 컴포넌트를 다시 마운트
     setCurrentPage('chat');
+    console.log('회원가입 후 상태 설정 완료');
   };
 
   const handleLogout = () => {
@@ -61,6 +63,7 @@ function App() {
 
   // 로그인된 경우 채팅 페이지 표시
   if (isLoggedIn && user) {
+    console.log('채팅 페이지 렌더링:', { isLoggedIn, user, currentPage });
     return (
       <div>
         <div style={{ 
