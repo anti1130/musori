@@ -1,14 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import socket from '../socket';
 
-function Chat() {
+function Chat({ user }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [nickname, setNickname] = useState('');
+  const [nickname, setNickname] = useState(user?.nickname || '');
   const [nicknameInput, setNicknameInput] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const messagesEndRef = useRef(null);
+
+  // 사용자 정보가 있으면 닉네임 자동 설정
+  useEffect(() => {
+    if (user?.nickname) {
+      setNickname(user.nickname);
+    }
+  }, [user]);
 
   useEffect(() => {
     // 소켓 이벤트 리스너 설정
@@ -59,6 +66,56 @@ function Chat() {
     }, 100);
   };
 
+  // 사용자 정보가 있으면 바로 채팅 표시
+  if (user?.nickname) {
+    return (
+      <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', gap: 16 }}>
+        {/* 채팅창 */}
+        <div style={{ flex: 1 }}>
+          <div style={{ border: '1px solid #ccc', height: 300, overflowY: 'auto', padding: 8, marginBottom: 8 }}>
+            {messages.map((msg, idx) =>
+              msg.notice ? (
+                <div key={idx} style={{ color: '#888', fontStyle: 'italic', margin: '4px 0' }}>{msg.text}</div>
+              ) : (
+                <div key={idx} style={{ margin: '4px 0' }}>{msg}</div>
+              )
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+          <form onSubmit={handleSubmit} style={{ display: 'flex' }}>
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              style={{ flex: 1, marginRight: 4 }}
+              placeholder="메시지를 입력하세요"
+            />
+            <button type="submit">전송</button>
+          </form>
+        </div>
+
+        {/* 온라인 유저 리스트 */}
+        <div style={{ width: 200, border: '1px solid #ccc', padding: 8 }}>
+          <h3 style={{ margin: '0 0 8px 0', fontSize: 14 }}>온라인 유저 ({onlineUsers.length})</h3>
+          <div style={{ maxHeight: 250, overflowY: 'auto' }}>
+            {onlineUsers.map((user, idx) => (
+              <div key={idx} style={{ 
+                padding: '4px 8px', 
+                margin: '2px 0', 
+                backgroundColor: user === nickname ? '#e3f2fd' : '#f5f5f5',
+                borderRadius: 4,
+                fontSize: 12
+              }}>
+                {user === nickname ? '나' : user}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 사용자 정보가 없으면 닉네임 입력 (기존 로직 유지)
   if (!nickname) {
     return (
       <div style={{ maxWidth: 400, margin: '0 auto', marginTop: 40 }}>
