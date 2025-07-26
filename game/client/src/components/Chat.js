@@ -15,11 +15,20 @@ function Chat({ user }) {
   useEffect(() => {
     if (user?.nickname) {
       setNickname(user.nickname);
+      // 새로운 사용자로 로그인할 때 hasJoined 초기화
+      setHasJoined(false);
     }
   }, [user]);
 
   // 사용자 정보가 있고 아직 입장하지 않았다면 자동 입장
   useEffect(() => {
+    console.log('자동 입장 체크:', {
+      hasNickname: !!user?.nickname,
+      hasJoined,
+      isConnected,
+      nickname: user?.nickname
+    });
+    
     if (user?.nickname && !hasJoined && isConnected) {
       console.log('자동 입장 시도:', user.nickname);
       setTimeout(() => {
