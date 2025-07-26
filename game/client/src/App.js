@@ -30,12 +30,16 @@ function App() {
     console.log('로그인 성공:', userData);
     setUser(userData);
     setIsLoggedIn(true);
+    // hasJoined 상태를 초기화하기 위해 Chat 컴포넌트를 다시 마운트
+    setCurrentPage('chat');
   };
 
   const handleRegister = (userData) => {
     console.log('회원가입 성공:', userData);
     setUser(userData);
     setIsLoggedIn(true);
+    // hasJoined 상태를 초기화하기 위해 Chat 컴포넌트를 다시 마운트
+    setCurrentPage('chat');
   };
 
   const handleLogout = () => {
@@ -87,7 +91,7 @@ function App() {
             </button>
           </div>
         </div>
-        <Chat user={user} />
+        <Chat user={user} key={user?.email || 'anonymous'} />
       </div>
     );
   }
