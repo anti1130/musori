@@ -42,7 +42,7 @@ function Login({ onLogin, onSwitchToRegister }) {
 
       const data = await response.json();
 
-      if (data.success) {
+      if (response.ok && data.success) {
         // 로그인 성공
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
