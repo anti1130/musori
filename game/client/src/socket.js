@@ -14,4 +14,14 @@ socket.on('connect_error', (error) => {
   console.error('연결 에러:', error);
 });
 
+// 유저 리스트 수신 로그
+socket.on('user list', (users) => {
+  console.log('유저 리스트 수신:', users);
+});
+
+// notice 메시지 수신 로그
+socket.on('notice', (msg) => {
+  console.log('notice 메시지 수신:', msg);
+});
+
 export default socket;
