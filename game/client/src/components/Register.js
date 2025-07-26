@@ -56,7 +56,7 @@ function Register({ onRegister, onSwitchToLogin }) {
 
       const data = await response.json();
 
-      if (data.success) {
+      if (response.ok && data.success) {
         // 회원가입 성공
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
