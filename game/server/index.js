@@ -15,11 +15,16 @@ const onlineUsers = new Map(); // socket.id -> nickname
 // 모든 클라이언트에게 유저 리스트 전송
 const broadcastUserList = () => {
   const userList = Array.from(onlineUsers.values());
+  console.log('현재 온라인 유저:', userList);
   io.emit('user list', userList);
 };
 
 io.on('connection', (socket) => {
   console.log('새 클라이언트 접속:', socket.id);
+
+  // 새 클라이언트 접속 시 현재 온라인 유저 리스트 전송
+  const currentUserList = Array.from(onlineUsers.values());
+  socket.emit('user list', currentUserList);
 
   // 채팅 메시지 수신 및 전체 클라이언트로 전송
   socket.on('chat message', (msg) => {
