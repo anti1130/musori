@@ -14,7 +14,14 @@ io.on('connection', (socket) => {
 
   // 채팅 메시지 수신 및 전체 클라이언트로 전송
   socket.on('chat message', (msg) => {
+    console.log('메시지 수신:', msg); // 로그 추가
     io.emit('chat message', msg);
+  });
+
+  // 입장 알림 메시지 처리
+  socket.on('notice', (msg) => {
+    console.log('입장 알림:', msg);
+    io.emit('notice', msg);
   });
 
   socket.on('disconnect', () => {
