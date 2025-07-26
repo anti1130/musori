@@ -8,6 +8,7 @@ function Chat({ user }) {
   const [nicknameInput, setNicknameInput] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState([]);
+  const [hasJoined, setHasJoined] = useState(false);
   const messagesEndRef = useRef(null);
 
   // 사용자 정보가 있으면 닉네임 자동 설정
@@ -16,6 +17,16 @@ function Chat({ user }) {
       setNickname(user.nickname);
     }
   }, [user]);
+
+  // 사용자 정보가 있고 아직 입장하지 않았다면 자동 입장
+  useEffect(() => {
+    if (user?.nickname && !hasJoined && isConnected) {
+      setTimeout(() => {
+        socket.emit('notice', `${user.nickname}님이 입장하셨습니다.`);
+        setHasJoined(true);
+      }, 500);
+    }
+  }, [user, hasJoined, isConnected]);
 
   useEffect(() => {
     // 소켓 이벤트 리스너 설정
@@ -63,6 +74,7 @@ function Chat({ user }) {
     // 닉네임 설정 후 입장 메시지 전송
     setTimeout(() => {
       socket.emit('notice', `${nicknameInput}님이 입장하셨습니다.`);
+      setHasJoined(true);
     }, 100);
   };
 
