@@ -43,6 +43,35 @@ function Chat({ user }) {
     }
   }, [user, hasJoined, isConnected]);
 
+  // 추가: 연결 상태가 변경될 때마다 체크
+  useEffect(() => {
+    if (user?.nickname && isConnected && !hasJoined) {
+      console.log('연결 후 자동 입장 시도:', user.nickname);
+      setTimeout(() => {
+        const joinMessage = `${user.nickname}님이 입장하셨습니다.`;
+        console.log('연결 후 입장 메시지 전송:', joinMessage);
+        socket.emit('notice', joinMessage);
+        setHasJoined(true);
+      }, 1000);
+    }
+  }, [isConnected, user, hasJoined]);
+
+  // 추가: 컴포넌트 마운트 후 2초 뒤 강제 시도
+  useEffect(() => {
+    if (user?.nickname) {
+      const timer = setTimeout(() => {
+        if (!hasJoined) {
+          console.log('타이머 기반 자동 입장 시도:', user.nickname);
+          const joinMessage = `${user.nickname}님이 입장하셨습니다.`;
+          socket.emit('notice', joinMessage);
+          setHasJoined(true);
+        }
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [user, hasJoined]);
+
   useEffect(() => {
     // 소켓 이벤트 리스너 설정
     socket.on('chat message', (msg) => {
