@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Chat from './components/Chat';
 import Login from './components/Login';
 import Register from './components/Register';
+import socket from './socket';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -45,6 +46,11 @@ function App() {
   };
 
   const handleLogout = () => {
+    // 로그아웃 시 퇴장 메시지 전송
+    if (user?.nickname) {
+      socket.emit('notice', `${user.nickname}님이 퇴장하셨습니다.`);
+    }
+    
     setIsLoggedIn(false);
     setUser(null);
     setCurrentPage('login');
