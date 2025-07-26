@@ -145,11 +145,16 @@ io.on('connection', (socket) => {
 
   // 입장 알림 메시지 처리
   socket.on('notice', (msg) => {
-    console.log('입장 알림:', msg);
+    console.log('입장 알림 수신:', msg);
+    console.log('현재 소켓 ID:', socket.id);
     
     // 닉네임 추출 (예: "홍길동님이 입장하셨습니다." -> "홍길동")
     const nickname = msg.replace('님이 입장하셨습니다.', '');
+    console.log('추출된 닉네임:', nickname);
+    
     onlineUsers.set(socket.id, nickname);
+    console.log('온라인 유저에 추가됨:', nickname);
+    console.log('현재 온라인 유저 목록:', Array.from(onlineUsers.values()));
     
     // 입장 메시지 브로드캐스트
     io.emit('notice', msg);
