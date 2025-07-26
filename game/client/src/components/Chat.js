@@ -7,6 +7,7 @@ function Chat() {
   const [nickname, setNickname] = useState('');
   const [nicknameInput, setNicknameInput] = useState('');
   const [isConnected, setIsConnected] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState([]);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -19,6 +20,11 @@ function Chat() {
       setMessages((prev) => [...prev, { notice: true, text: msg }]);
     });
 
+    // 온라인 유저 리스트 업데이트
+    socket.on('user list', (users) => {
+      setOnlineUsers(users);
+    });
+
     // 연결 상태 확인
     socket.on('connect', () => {
       setIsConnected(true);
@@ -27,6 +33,7 @@ function Chat() {
     return () => {
       socket.off('chat message');
       socket.off('notice');
+      socket.off('user list');
       socket.off('connect');
     };
   }, []);
@@ -73,27 +80,48 @@ function Chat() {
   }
 
   return (
-    <div style={{ maxWidth: 400, margin: '0 auto' }}>
-      <div style={{ border: '1px solid #ccc', height: 300, overflowY: 'auto', padding: 8, marginBottom: 8 }}>
-        {messages.map((msg, idx) =>
-          msg.notice ? (
-            <div key={idx} style={{ color: '#888', fontStyle: 'italic', margin: '4px 0' }}>{msg.text}</div>
-          ) : (
-            <div key={idx} style={{ margin: '4px 0' }}>{msg}</div>
-          )
-        )}
-        <div ref={messagesEndRef} />
+    <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', gap: 16 }}>
+      {/* 채팅창 */}
+      <div style={{ flex: 1 }}>
+        <div style={{ border: '1px solid #ccc', height: 300, overflowY: 'auto', padding: 8, marginBottom: 8 }}>
+          {messages.map((msg, idx) =>
+            msg.notice ? (
+              <div key={idx} style={{ color: '#888', fontStyle: 'italic', margin: '4px 0' }}>{msg.text}</div>
+            ) : (
+              <div key={idx} style={{ margin: '4px 0' }}>{msg}</div>
+            )
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+        <form onSubmit={handleSubmit} style={{ display: 'flex' }}>
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            style={{ flex: 1, marginRight: 4 }}
+            placeholder="메시지를 입력하세요"
+          />
+          <button type="submit">전송</button>
+        </form>
       </div>
-      <form onSubmit={handleSubmit} style={{ display: 'flex' }}>
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          style={{ flex: 1, marginRight: 4 }}
-          placeholder="메시지를 입력하세요"
-        />
-        <button type="submit">전송</button>
-      </form>
+
+      {/* 온라인 유저 리스트 */}
+      <div style={{ width: 200, border: '1px solid #ccc', padding: 8 }}>
+        <h3 style={{ margin: '0 0 8px 0', fontSize: 14 }}>온라인 유저 ({onlineUsers.length})</h3>
+        <div style={{ maxHeight: 250, overflowY: 'auto' }}>
+          {onlineUsers.map((user, idx) => (
+            <div key={idx} style={{ 
+              padding: '4px 8px', 
+              margin: '2px 0', 
+              backgroundColor: user === nickname ? '#e3f2fd' : '#f5f5f5',
+              borderRadius: 4,
+              fontSize: 12
+            }}>
+              {user === nickname ? '나' : user}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
