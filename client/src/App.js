@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './firebase';
+import { db } from './firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import Chat from './components/Chat';
 import Login from './components/Login';
 import Register from './components/Register';
@@ -9,26 +11,40 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentPage, setCurrentPage] = useState('login');
   const [user, setUser] = useState(null);
+  const [darkMode, setDarkMode] = useState(false);
+  const fetchUserDarkMode = async (uid) => {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      if (userDoc.exists() && typeof userDoc.data().darkMode === 'boolean') {
+        setDarkMode(userDoc.data().darkMode);
+      } else {
+        setDarkMode(false);
+      }
+    } catch (e) {
+      setDarkMode(false);
+    }
+  };
 
   // Firebase 인증 상태 감지
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         // 로그인된 상태
         const userData = {
           email: firebaseUser.email,
           nickname: firebaseUser.displayName || firebaseUser.email.split('@')[0],
-          uid: firebaseUser.uid
+          uid: firebaseUser.uid,
+          photoURL: firebaseUser.photoURL // 추가!
         };
         setUser(userData);
         setIsLoggedIn(true);
-        console.log('Firebase 인증 상태: 로그인됨', userData);
+        await fetchUserDarkMode(firebaseUser.uid);
       } else {
         // 로그아웃된 상태
         setUser(null);
         setIsLoggedIn(false);
         setCurrentPage('login');
-        console.log('Firebase 인증 상태: 로그아웃됨');
+        setDarkMode(false);
       }
     });
 
@@ -36,30 +52,21 @@ function App() {
   }, []);
 
   const handleLogin = (userData) => {
-    console.log('로그인 성공:', userData);
-    console.log('로그인 전 상태:', { isLoggedIn, user, currentPage });
     setUser(userData);
     setIsLoggedIn(true);
     setCurrentPage('chat');
-    console.log('로그인 후 상태 설정 완료');
   };
 
   const handleRegister = (userData) => {
-    console.log('회원가입 성공:', userData);
-    console.log('회원가입 전 상태:', { isLoggedIn, user, currentPage });
     setUser(userData);
     setIsLoggedIn(true);
     setCurrentPage('chat');
-    console.log('회원가입 후 상태 설정 완료');
   };
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      console.log('Firebase 로그아웃 성공');
-    } catch (error) {
-      console.error('Firebase 로그아웃 에러:', error);
-    }
+    } catch (error) {}
   };
 
   const switchToRegister = () => {
@@ -70,40 +77,33 @@ function App() {
     setCurrentPage('login');
   };
 
+  // 다크모드 토글 시 Firestore에도 저장
+  const handleSetDarkMode = async (value) => {
+    setDarkMode(value);
+    if (user && user.uid) {
+      try {
+        await setDoc(doc(db, 'users', user.uid), { darkMode: value }, { merge: true });
+      } catch (e) {}
+    }
+  };
+
   // 로그인된 경우 채팅 페이지 표시
   if (isLoggedIn && user) {
-    console.log('채팅 페이지 렌더링:', { isLoggedIn, user, currentPage });
     return (
-      <div>
+      <div className={darkMode ? 'dark-mode' : ''}>
         <div style={{ 
-          padding: '10px 20px', 
+          padding: 0, 
           backgroundColor: '#f8f9fa', 
-          borderBottom: '1px solid #ddd',
+          borderBottom: 'none',
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center'
+          alignItems: 'center',
+          height: 0,
+          minHeight: 0
         }}>
-          <h1 style={{ margin: 0, fontSize: '20px' }}>실시간 채팅</h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ color: '#666' }}>
-              {user?.nickname || user?.email}님 환영합니다!
-            </span>
-            <button
-              onClick={handleLogout}
-              style={{
-                padding: '5px 10px',
-                backgroundColor: '#dc3545',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              로그아웃
-            </button>
-          </div>
+          {/* 헤더바 내용 비움 */}
         </div>
-        <Chat user={user} key={user?.email || 'anonymous'} />
+        <Chat user={user} key={user?.email || 'anonymous'} handleLogout={handleLogout} darkMode={darkMode} setDarkMode={handleSetDarkMode} />
       </div>
     );
   }
