@@ -172,7 +172,46 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
   // 사용자 정보가 있으면 바로 채팅 표시
   if (user?.nickname) {
     return (
-      <div style={{ background: colors.bg, minHeight: '100vh' }}>
+      <div style={{ 
+        background: colors.bg, 
+        height: '100vh', 
+        width: '100vw',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        margin: 0,
+        padding: 0,
+        overflow: 'hidden'
+      }}>
+        {/* 메인 화면 텍스트 */}
+        <div style={{
+          position: 'fixed',
+          top: '50%',
+          left: '30%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 500,
+          textAlign: 'left'
+        }}>
+          <div style={{
+            fontSize: '48px',
+            fontWeight: 'bold',
+            color: darkMode ? '#FFD700' : '#007bff',
+            marginBottom: '20px'
+          }}>
+            
+            1.0
+          </div>
+          <div style={{
+            fontSize: '16px',
+            color: darkMode ? '#FFFFFF' : '#000000',
+            lineHeight: '1.6'
+          }}>
+            1. 다크모드시 채팅창 테두리 오류 수정<br/>
+            2. 채팅창 유저 사이드바 다크모드 적용<br/>
+            3. 음성채팅은 아직..
+          </div>
+        </div>
+
         {/* 왼쪽 메인 사이드바 햄버거 버튼 (헤더바 높이 50px에 맞춰 상단 0, 항상 보임) */}
         <button
           onClick={() => setMainSidebarOpen((open) => !open)}
@@ -324,7 +363,7 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
             position: 'fixed',
             bottom: 0,
             right: 0,
-            zIndex: 1000,
+            zIndex: 1001,
             background: colors.chatBg,
             border: `1px solid ${colors.border}`,
             borderRadius: '8px 0 0 0',
@@ -421,7 +460,7 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
                         <div style={{ fontSize: '12px', color: colors.nickname, fontWeight: 'bold', marginBottom: '2px' }}>
                           {msg.nickname}
                         </div>
-                        <div style={{ wordBreak: 'break-word', whiteSpace: 'pre-line', overflowWrap: 'break-word' }}>{msg.text}</div>
+                        <div style={{ wordBreak: 'break-word', whiteSpace: 'pre-line', overflowWrap: 'break-word', color: darkMode ? '#fff' : '#000' }}>{msg.text}</div>
                         {timeStr && (
                           <div style={{ fontSize: '11px', color: '#bbb', marginTop: 2 }}>{timeStr}</div>
                         )}
@@ -472,12 +511,13 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
               right: 0,
               width: 180,
               height: '100%',
-              background: '#f8f9fa',
+              background: darkMode ? colors.sidebarBg : '#f8f9fa',
               zIndex: 1100,
               boxShadow: '-2px 0 12px rgba(0,0,0,0.08)',
               display: 'flex',
               flexDirection: 'column',
-              padding: 12
+              padding: 12,
+              color: colors.sidebarText
             }}>
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
                 <button
@@ -499,7 +539,7 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
                   <div style={{ width: 18, height: 2, background: '#333', margin: '2px 0', borderRadius: 2, transform: 'rotate(-45deg)', marginTop: '-4px' }} />
                 </button>
               </div>
-              <h4 style={{ margin: 0, fontSize: 14, color: '#495057', marginBottom: 8 }}>
+              <h4 style={{ margin: 0, fontSize: 14, color: colors.sidebarText, marginBottom: 8 }}>
                 온라인 ({onlineUsers.length})
               </h4>
               <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -507,8 +547,8 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
                   <div key={onlineUser.id} style={{
                     padding: '8px 12px',
                     margin: '2px 0',
-                    backgroundColor: onlineUser.id === user.uid ? '#007bff' : 'white',
-                    color: onlineUser.id === user.uid ? 'white' : '#333',
+                    backgroundColor: onlineUser.id === user.uid ? '#007bff' : (darkMode ? '#444' : '#f5f5f5'),
+                    color: onlineUser.id === user.uid ? 'white' : colors.sidebarText,
                     borderRadius: '8px',
                     fontSize: 12,
                     display: 'flex',
@@ -592,11 +632,20 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
         {darkMode && (
           <style>{`
             .re-resizable-handle {
-              background: ${colors.headerBg} !important;
+              background: ${colors.border} !important;
               border-color: ${colors.border} !important;
+              opacity: 0.8 !important;
+              z-index: 999 !important;
             }
             .re-resizable-handle:after {
-              background: ${colors.headerBg} !important;
+              background: ${colors.border} !important;
+            }
+            .re-resizable-handle:hover {
+              background: ${colors.headerText} !important;
+              opacity: 1 !important;
+            }
+            .re-resizable {
+              z-index: 1000 !important;
             }
           `}</style>
         )}

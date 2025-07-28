@@ -97,7 +97,7 @@ function Login({ onLogin, onSwitchToRegister }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             style={{
-              width: '100%',
+              width: '95%',
               padding: '10px',
               border: '1px solid #ddd',
               borderRadius: '4px',
@@ -115,7 +115,7 @@ function Login({ onLogin, onSwitchToRegister }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             style={{
-              width: '100%',
+              width: '95%',
               padding: '10px',
               border: '1px solid #ddd',
               borderRadius: '4px',
@@ -130,7 +130,7 @@ function Login({ onLogin, onSwitchToRegister }) {
           type="submit"
           disabled={loading}
           style={{
-            width: '100%',
+            width: '95%',
             padding: '12px',
             backgroundColor: loading ? '#ccc' : '#007bff',
             color: 'white',

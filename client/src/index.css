@@ -12,7 +12,6 @@ body {
 }
 
 .dark-mode, .dark-mode * {
-  background-color: inherit;
   color: inherit;
   box-shadow: none;
 }

@@ -1,6 +1,19 @@
 import React, { useState } from 'react';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { auth } from '../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { auth, storage } from '../firebase';
+
+async function uploadToCloudinary(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', 'musori-image');
+  const res = await fetch('https://api.cloudinary.com/v1_1/dokzgwvob/image/upload', {
+    method: 'POST',
+    body: formData,
+  });
+  const data = await res.json();
+  return data.secure_url;
+}
 
 function Register({ onRegister, onSwitchToLogin }) {
   const [email, setEmail] = useState('');
@@ -9,6 +22,11 @@ function Register({ onRegister, onSwitchToLogin }) {
   const [nickname, setNickname] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [photo, setPhoto] = useState(null);
+
+  const handlePhotoChange = (e) => {
+    if (e.target.files[0]) setPhoto(e.target.files[0]);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -51,8 +69,14 @@ function Register({ onRegister, onSwitchToLogin }) {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      // 사용자 프로필에 닉네임 저장
-      await updateProfile(user, { displayName: nickname });
+      let photoURL = '';
+      if (photo) {
+        photoURL = await uploadToCloudinary(photo);
+      }
+      await updateProfile(user, {
+        displayName: nickname,
+        photoURL: photoURL || undefined,
+      });
       
       console.log('Firebase 회원가입 성공:', user);
       
@@ -114,7 +138,7 @@ function Register({ onRegister, onSwitchToLogin }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             style={{
-              width: '100%',
+              width: '95%',
               padding: '10px',
               border: '1px solid #ddd',
               borderRadius: '4px',
@@ -132,7 +156,7 @@ function Register({ onRegister, onSwitchToLogin }) {
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
             style={{
-              width: '100%',
+              width: '95%',
               padding: '10px',
               border: '1px solid #ddd',
               borderRadius: '4px',
@@ -150,7 +174,7 @@ function Register({ onRegister, onSwitchToLogin }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             style={{
-              width: '100%',
+              width: '95%',
               padding: '10px',
               border: '1px solid #ddd',
               borderRadius: '4px',
@@ -168,7 +192,7 @@ function Register({ onRegister, onSwitchToLogin }) {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             style={{
-              width: '100%',
+              width: '95%',
               padding: '10px',
               border: '1px solid #ddd',
               borderRadius: '4px',
