@@ -32,6 +32,18 @@ npm install
 npm start
 ```
 
+## Git 명령어
+```bash
+# 변경사항 추가
+git add .
+
+# 커밋
+git commit -m "커밋 메시지"
+
+# GitHub에 업로드
+git push origin master
+```
+
 ## 라이센스
 MIT License 
 
