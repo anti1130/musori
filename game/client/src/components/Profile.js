@@ -5,6 +5,7 @@ import { updateProfile } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import ThemeSettings from './ThemeSettings';
 import NotificationSettings from './NotificationSettings';
+import RankDisplay from './RankDisplay';
 
 function Profile({ user, onBack, darkMode, customThemeColor, setCustomThemeColor, notificationSettings, setNotificationSettings, onUserUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -254,9 +255,13 @@ function Profile({ user, onBack, darkMode, customThemeColor, setCustomThemeColor
             fontSize: '24px',
             fontWeight: 'bold',
             color: colors.text,
-            marginBottom: '8px'
+            marginBottom: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
           }}>
             {currentUser.nickname}
+            <RankDisplay createdAt={currentUser.createdAt} size="medium" />
           </div>
 
           {/* 상태 메시지 */}

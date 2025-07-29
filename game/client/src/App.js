@@ -50,11 +50,12 @@ function App() {
           });
         }
 
-        // 사용자 정보 업데이트 (statusMessage, bio 포함)
+        // 사용자 정보 업데이트 (statusMessage, bio, createdAt 포함)
         setUser(prevUser => ({
           ...prevUser,
           statusMessage: userData.statusMessage || '',
-          bio: userData.bio || ''
+          bio: userData.bio || '',
+          createdAt: userData.createdAt || prevUser.createdAt
         }));
       } else {
         setDarkMode(false);
@@ -91,13 +92,16 @@ function App() {
         };
         
         // users 컬렉션에 사용자 정보 저장 (기존 정보 유지)
+        let userCreatedAt = serverTimestamp();
         try {
           const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
           if (userDoc.exists()) {
             // 기존 사용자: 기존 정보 유지하면서 기본 정보만 업데이트
             const existingData = userDoc.data();
+            userCreatedAt = existingData.createdAt || serverTimestamp();
             await setDoc(doc(db, 'users', firebaseUser.uid), {
               ...userData,
+              createdAt: userCreatedAt, // 기존 가입일 유지
               statusMessage: existingData.statusMessage || '',
               bio: existingData.bio || '',
               customThemeColor: existingData.customThemeColor || '#007bff',
@@ -112,7 +116,7 @@ function App() {
             // 새 사용자: 기본 정보로 초기화
             await setDoc(doc(db, 'users', firebaseUser.uid), {
               ...userData,
-              createdAt: serverTimestamp(),
+              createdAt: userCreatedAt, // 가입일 설정
               lastSeen: serverTimestamp(),
               activityScore: 0
             }, { merge: true });
@@ -121,7 +125,12 @@ function App() {
           console.error('Error saving user data:', error);
         }
         
-        setUser(userData);
+        // createdAt 정보도 포함하여 사용자 정보 설정
+        const userWithCreatedAt = {
+          ...userData,
+          createdAt: userCreatedAt
+        };
+        setUser(userWithCreatedAt);
         setIsLoggedIn(true);
         await fetchUserSettings(firebaseUser.uid);
       } else {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import RankDisplay from './RankDisplay';
 
 function UserProfile({ userData, onBack, darkMode, customThemeColor }) {
   const [userInfo, setUserInfo] = useState(null);
@@ -217,9 +218,13 @@ function UserProfile({ userData, onBack, darkMode, customThemeColor }) {
             <h2 style={{
               margin: '0 0 8px 0',
               fontSize: '24px',
-              color: colors.text
+              color: colors.text,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
             }}>
               {userInfo?.nickname || '사용자'}
+              <RankDisplay createdAt={userInfo?.createdAt} size="medium" />
             </h2>
             
             {userInfo?.statusMessage && (

@@ -8,6 +8,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../firebase';
 import Profile from './Profile';
 import UserProfile from './UserProfile';
+import RankDisplay from './RankDisplay';
 
 async function uploadToCloudinary(file) {
   const formData = new FormData();
@@ -147,6 +148,7 @@ function Chat({ user, handleLogout, darkMode, setDarkMode, customThemeColor, set
         userId: user.uid,
         nickname: user.nickname,
         photoURL: user.photoURL, // 프로필 사진 URL 저장
+        createdAt: user.createdAt || serverTimestamp(), // 가입일 정보 추가
         timestamp: serverTimestamp()
       });
       setInput('');
@@ -380,8 +382,8 @@ function Chat({ user, handleLogout, darkMode, setDarkMode, customThemeColor, set
              marginBottom: '40px'
            }}>
              초초초 짱쩌는 업데이트 바로 상대 프로필 보!기!<br/>
-              -이제 상대의 프로필사진과 마지막 활동을 관찰 할 수 있으며
-              -상대가 자신의 자기소개와 상태메세지를 볼 수 있게됩니다.!!!!!!
+              -이제 상대의 프로필사진과 마지막 활동을 관찰 할 수 있으며<br/>
+               상대가 자신의 자기소개와 상태메세지를 볼 수 있게됩니다.!!!!!!
            </div>
            
            <div style={{
@@ -398,7 +400,8 @@ function Chat({ user, handleLogout, darkMode, setDarkMode, customThemeColor, set
              lineHeight: '1.6',
              marginBottom: '40px'
            }}>
-             내용은 추후 변경
+             슈퍼슈퍼 짱짱 미친 업데이트 바로 랭크 시스템 도! 입!<br/>
+              이제 가입일을 기준으로 자신의 랭크를 확인 할 수 있습니다.
            </div>
            
            <div style={{
@@ -731,8 +734,9 @@ function Chat({ user, handleLogout, darkMode, setDarkMode, customThemeColor, set
                         )}
                       </div>
                       <div style={{minWidth:0}}>
-                        <div style={{ fontSize: '12px', color: colors.nickname, fontWeight: 'bold', marginBottom: '2px' }}>
+                        <div style={{ fontSize: '12px', color: colors.nickname, fontWeight: 'bold', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           {msg.nickname}
+                          <RankDisplay createdAt={msg.createdAt} size="small" />
                         </div>
                         <div style={{ wordBreak: 'break-word', whiteSpace: 'pre-line', overflowWrap: 'break-word', color: darkMode ? '#fff' : '#000' }}>{msg.text}</div>
                         {timeStr && (
