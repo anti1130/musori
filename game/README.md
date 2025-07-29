@@ -38,7 +38,7 @@ npm start
 git add .
 
 # 커밋
-git commit -m "커밋 메시지"
+git commit -m "메세지"
 
 # GitHub에 업로드
 git push origin master

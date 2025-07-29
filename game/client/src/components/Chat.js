@@ -6,6 +6,7 @@ import { Resizable } from 're-resizable';
 import { updateProfile } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../firebase';
+import Profile from './Profile';
 
 async function uploadToCloudinary(file) {
   const formData = new FormData();
@@ -30,6 +31,7 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
   const [editError, setEditError] = useState('');
   const [newPhoto, setNewPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
+  const [showProfile, setShowProfile] = useState(false);
 
   // 실시간 메시지 수신
   useEffect(() => {
@@ -293,7 +295,9 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
              lineHeight: '1.6',
              marginBottom: '40px'
            }}>
-             내용은 추후 변경
+             1. 프로필 페이지 추가<br/>
+              -활동 점수 추가<br/>
+              -테마,알림,개인정보 관리 추가
            </div>
            
            <div style={{
@@ -310,7 +314,8 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
              lineHeight: '1.6',
              marginBottom: '40px'
            }}>
-             내용은 추후 변경
+             1. 상태 메시지 기능 추가<br/>
+             2. 자기소개 기능 추가<br/>
            </div>
            
            <div style={{
@@ -524,6 +529,22 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
                 }}
               >
                 로그아웃
+              </button>
+              <button
+                onClick={() => setShowProfile(true)}
+                style={{
+                  width: '100%',
+                  padding: '8px 0',
+                  background: darkMode ? '#333' : '#f5f5f5',
+                  color: colors.sidebarText,
+                  border: 'none',
+                  borderRadius: 6,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  marginBottom: 8
+                }}
+              >
+                프로필 보기
               </button>
               <button
                 onClick={() => setEditProfileOpen(true)}
@@ -834,6 +855,20 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
             </form>
           </div>
         )}
+        
+        {/* 프로필 페이지 */}
+        {showProfile && (
+          <Profile 
+            user={user} 
+            onBack={() => setShowProfile(false)}
+            darkMode={darkMode}
+            onUserUpdate={(updatedUser) => {
+              // 사용자 정보 업데이트
+              setUser(updatedUser);
+            }}
+          />
+        )}
+        
         {/* 다크모드용 드래그바 스타일 동적 삽입 */}
         {darkMode && (
           <style>{`
