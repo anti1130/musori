@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './firebase';
 import { db } from './firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import Chat from './components/Chat';
 import Login from './components/Login';
 import Register from './components/Register';
@@ -65,6 +65,11 @@ function App() {
 
   const handleLogout = async () => {
     try {
+      // 온라인 유저 목록에서 제거
+      if (user && user.uid) {
+        const userRef = doc(db, 'onlineUsers', user.uid);
+        await deleteDoc(userRef);
+      }
       await signOut(auth);
     } catch (error) {}
   };

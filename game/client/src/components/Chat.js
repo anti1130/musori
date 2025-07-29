@@ -47,14 +47,16 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
     return () => unsubscribe();
   }, [user]);
 
-  // 온라인 유저 실시간 감지
+  // 온라인 유저 실시간 감지 (모든 유저 표시)
   useEffect(() => {
     if (!user) return;
 
     const unsubscribe = onUserSnapshot(collection(db, 'onlineUsers'), (snapshot) => {
       const userList = [];
+      
       snapshot.forEach((doc) => {
-        userList.push({ id: doc.id, ...doc.data() });
+        const userData = { id: doc.id, ...doc.data() };
+        userList.push(userData);
       });
       setOnlineUsers(userList);
     });
@@ -68,7 +70,7 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
 
     const userRef = doc(db, 'onlineUsers', user.uid);
     
-    // 온라인 상태 설정
+    // 온라인 상태 설정 (타임스탬프 업데이트)
     setDoc(userRef, {
       nickname: user.nickname,
       email: user.email,
@@ -76,9 +78,51 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
       isOnline: true
     });
 
+    // 주기적으로 타임스탬프 업데이트 (활동 상태 유지)
+    const updateTimestamp = () => {
+      setDoc(userRef, {
+        nickname: user.nickname,
+        email: user.email,
+        lastSeen: serverTimestamp(),
+        isOnline: true
+      }, { merge: true });
+    };
+
+    // 1분마다 타임스탬프 업데이트
+    const timestampInterval = setInterval(updateTimestamp, 60000);
+
+
+
+    // 브라우저 닫기 감지
+    const handleBeforeUnload = () => {
+      deleteDoc(userRef);
+    };
+
+    // 페이지 가시성 변경 감지
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        deleteDoc(userRef);
+      } else {
+        setDoc(userRef, {
+          nickname: user.nickname,
+          email: user.email,
+          lastSeen: serverTimestamp(),
+          isOnline: true
+        });
+
+      }
+    };
+
+    // 이벤트 리스너 추가
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     // 컴포넌트 언마운트 시 오프라인 상태로 변경
     return () => {
       deleteDoc(userRef);
+      clearInterval(timestampInterval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [user]);
 
@@ -186,11 +230,16 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
         {/* 메인 화면 텍스트 */}
         <div style={{
           position: 'fixed',
-          top: '50%',
-          left: '30%',
-          transform: 'translate(-50%, -50%)',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
           zIndex: 500,
-          textAlign: 'left'
+          textAlign: 'left',
+          overflowY: 'auto',
+          padding: '20px',
+          paddingTop: '50px',
+          paddingLeft: '240px'
         }}>
           <div style={{
             fontSize: '48px',
@@ -198,19 +247,190 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
             color: darkMode ? '#FFD700' : '#007bff',
             marginBottom: '20px'
           }}>
-            
             1.0
           </div>
           <div style={{
             fontSize: '16px',
             color: darkMode ? '#FFFFFF' : '#000000',
-            lineHeight: '1.6'
+            lineHeight: '1.6',
+            marginBottom: '40px'
           }}>
             1. 다크모드시 채팅창 테두리 오류 수정<br/>
             2. 채팅창 유저 사이드바 다크모드 적용<br/>
             3. 음성채팅은 아직..
           </div>
-        </div>
+          
+          <div style={{
+            fontSize: '48px',
+            fontWeight: 'bold',
+            color: darkMode ? '#FFD700' : '#007bff',
+            marginBottom: '20px'
+          }}>
+            1.0.1
+          </div>
+                     <div style={{
+             fontSize: '16px',
+             color: darkMode ? '#FFFFFF' : '#000000',
+             lineHeight: '1.6',
+             marginBottom: '40px'
+           }}>
+             1. 온라인/오프라인 상태 개선<br/>
+             2. 오프라인 유저 빨간점 표시<br/>
+             3. 정확한 온라인 유저 수 카운트
+           </div>
+           
+           <div style={{
+             fontSize: '48px',
+             fontWeight: 'bold',
+             color: darkMode ? '#FFD700' : '#007bff',
+             marginBottom: '20px'
+           }}>
+             1.0.2
+           </div>
+           <div style={{
+             fontSize: '16px',
+             color: darkMode ? '#FFFFFF' : '#000000',
+             lineHeight: '1.6',
+             marginBottom: '40px'
+           }}>
+             내용은 추후 변경
+           </div>
+           
+           <div style={{
+             fontSize: '48px',
+             fontWeight: 'bold',
+             color: darkMode ? '#FFD700' : '#007bff',
+             marginBottom: '20px'
+           }}>
+             1.0.3
+           </div>
+           <div style={{
+             fontSize: '16px',
+             color: darkMode ? '#FFFFFF' : '#000000',
+             lineHeight: '1.6',
+             marginBottom: '40px'
+           }}>
+             내용은 추후 변경
+           </div>
+           
+           <div style={{
+             fontSize: '48px',
+             fontWeight: 'bold',
+             color: darkMode ? '#FFD700' : '#007bff',
+             marginBottom: '20px'
+           }}>
+             1.0.4
+           </div>
+           <div style={{
+             fontSize: '16px',
+             color: darkMode ? '#FFFFFF' : '#000000',
+             lineHeight: '1.6',
+             marginBottom: '40px'
+           }}>
+             내용은 추후 변경
+           </div>
+           
+           <div style={{
+             fontSize: '48px',
+             fontWeight: 'bold',
+             color: darkMode ? '#FFD700' : '#007bff',
+             marginBottom: '20px'
+           }}>
+             1.0.5
+           </div>
+           <div style={{
+             fontSize: '16px',
+             color: darkMode ? '#FFFFFF' : '#000000',
+             lineHeight: '1.6',
+             marginBottom: '40px'
+           }}>
+             내용은 추후 변경
+           </div>
+           
+           <div style={{
+             fontSize: '48px',
+             fontWeight: 'bold',
+             color: darkMode ? '#FFD700' : '#007bff',
+             marginBottom: '20px'
+           }}>
+             1.0.6
+           </div>
+           <div style={{
+             fontSize: '16px',
+             color: darkMode ? '#FFFFFF' : '#000000',
+             lineHeight: '1.6',
+             marginBottom: '40px'
+           }}>
+             내용은 추후 변경
+           </div>
+           
+           <div style={{
+             fontSize: '48px',
+             fontWeight: 'bold',
+             color: darkMode ? '#FFD700' : '#007bff',
+             marginBottom: '20px'
+           }}>
+             1.0.7
+           </div>
+           <div style={{
+             fontSize: '16px',
+             color: darkMode ? '#FFFFFF' : '#000000',
+             lineHeight: '1.6',
+             marginBottom: '40px'
+           }}>
+             내용은 추후 변경
+           </div>
+           
+           <div style={{
+             fontSize: '48px',
+             fontWeight: 'bold',
+             color: darkMode ? '#FFD700' : '#007bff',
+             marginBottom: '20px'
+           }}>
+             1.0.8
+           </div>
+           <div style={{
+             fontSize: '16px',
+             color: darkMode ? '#FFFFFF' : '#000000',
+             lineHeight: '1.6',
+             marginBottom: '40px'
+           }}>
+             내용은 추후 변경
+           </div>
+           
+           <div style={{
+             fontSize: '48px',
+             fontWeight: 'bold',
+             color: darkMode ? '#FFD700' : '#007bff',
+             marginBottom: '20px'
+           }}>
+             1.0.9
+           </div>
+           <div style={{
+             fontSize: '16px',
+             color: darkMode ? '#FFFFFF' : '#000000',
+             lineHeight: '1.6',
+             marginBottom: '40px'
+           }}>
+             내용은 추후 변경
+           </div>
+           
+           <div style={{
+             fontSize: '48px',
+             fontWeight: 'bold',
+             color: darkMode ? '#FFD700' : '#007bff',
+             marginBottom: '20px'
+           }}>
+             1.1.0
+           </div>
+           <div style={{
+             fontSize: '16px',
+             color: darkMode ? '#FFFFFF' : '#000000',
+             lineHeight: '1.6'
+           }}>
+             내용은 추후 변경
+           </div>
+         </div>
 
         {/* 왼쪽 메인 사이드바 햄버거 버튼 (헤더바 높이 50px에 맞춰 상단 0, 항상 보임) */}
         <button
@@ -386,7 +606,7 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
             borderTopRightRadius: 0,
           }}>
             <h3 style={{ margin: 0, fontSize: 16, color: colors.headerText }}>채팅</h3>
-            {/* 채팅창 내 헤더 오른쪽 햄버거 버튼 */}
+            {/* 채팅창 내 헤더 오른쪽 햄버거 버튼 (항상 보임) */}
             <button
               onClick={() => setUserSidebarOpen((open) => !open)}
               style={{
@@ -400,7 +620,8 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
                 alignItems: 'center',
                 cursor: 'pointer',
                 padding: 0,
-                marginLeft: 8
+                marginLeft: 8,
+                zIndex: 1200
               }}
             >
               <div style={{ width: 20, height: 2, background: colors.burger, margin: '2px 0', borderRadius: 2 }} />
@@ -516,31 +737,14 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
               boxShadow: '-2px 0 12px rgba(0,0,0,0.08)',
               display: 'flex',
               flexDirection: 'column',
-              padding: 12,
+              padding: '12px 12px 12px 12px',
               color: colors.sidebarText
             }}>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-                <button
-                  onClick={() => setUserSidebarOpen(false)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    width: 28,
-                    height: 28,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    cursor: 'pointer',
-                    padding: 0
-                  }}
-                >
-                  <div style={{ width: 18, height: 2, background: '#333', margin: '2px 0', borderRadius: 2, transform: 'rotate(45deg)' }} />
-                  <div style={{ width: 18, height: 2, background: '#333', margin: '2px 0', borderRadius: 2, transform: 'rotate(-45deg)', marginTop: '-4px' }} />
-                </button>
-              </div>
-              <h4 style={{ margin: 0, fontSize: 14, color: colors.sidebarText, marginBottom: 8 }}>
-                온라인 ({onlineUsers.length})
+              <h4 style={{ margin: 8, fontSize: 14, color: colors.sidebarText, marginBottom: 20 }}>
+                온라인 ({onlineUsers.filter(user => 
+                  user.lastSeen && 
+                  new Date().getTime() - user.lastSeen.toDate().getTime() < 5 * 60 * 1000
+                ).length})
               </h4>
               <div style={{ flex: 1, overflowY: 'auto' }}>
                 {onlineUsers.map((onlineUser) => (
@@ -555,12 +759,14 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
                     alignItems: 'center',
                     gap: '6px'
                   }}>
-                    <div style={{
-                      width: '8px',
-                      height: '8px',
-                      backgroundColor: '#28a745',
-                      borderRadius: '50%'
-                    }}></div>
+                                      <div style={{
+                    width: '8px',
+                    height: '8px',
+                    backgroundColor: (onlineUser.lastSeen && 
+                      new Date().getTime() - onlineUser.lastSeen.toDate().getTime() < 5 * 60 * 1000) 
+                      ? '#28a745' : '#dc3545',
+                    borderRadius: '50%'
+                  }}></div>
                     {onlineUser.id === user.uid ? '나' : onlineUser.nickname}
                   </div>
                 ))}
