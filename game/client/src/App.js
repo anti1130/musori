@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './firebase';
 import { db } from './firebase';
-import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import Chat from './components/Chat';
 import Login from './components/Login';
 import Register from './components/Register';
@@ -89,6 +89,38 @@ function App() {
           statusMessage: '',
           bio: ''
         };
+        
+        // users 컬렉션에 사용자 정보 저장 (기존 정보 유지)
+        try {
+          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          if (userDoc.exists()) {
+            // 기존 사용자: 기존 정보 유지하면서 기본 정보만 업데이트
+            const existingData = userDoc.data();
+            await setDoc(doc(db, 'users', firebaseUser.uid), {
+              ...userData,
+              statusMessage: existingData.statusMessage || '',
+              bio: existingData.bio || '',
+              customThemeColor: existingData.customThemeColor || '#007bff',
+              notificationSettings: existingData.notificationSettings || {
+                messageNotifications: true,
+                mentionNotifications: true,
+                summaryNotifications: false
+              },
+              lastSeen: serverTimestamp()
+            }, { merge: true });
+          } else {
+            // 새 사용자: 기본 정보로 초기화
+            await setDoc(doc(db, 'users', firebaseUser.uid), {
+              ...userData,
+              createdAt: serverTimestamp(),
+              lastSeen: serverTimestamp(),
+              activityScore: 0
+            }, { merge: true });
+          }
+        } catch (error) {
+          console.error('Error saving user data:', error);
+        }
+        
         setUser(userData);
         setIsLoggedIn(true);
         await fetchUserSettings(firebaseUser.uid);

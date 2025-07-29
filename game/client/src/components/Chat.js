@@ -7,6 +7,7 @@ import { updateProfile } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../firebase';
 import Profile from './Profile';
+import UserProfile from './UserProfile';
 
 async function uploadToCloudinary(file) {
   const formData = new FormData();
@@ -32,6 +33,8 @@ function Chat({ user, handleLogout, darkMode, setDarkMode, customThemeColor, set
   const [newPhoto, setNewPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
+  const [showUserProfile, setShowUserProfile] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   // 실시간 메시지 수신
   useEffect(() => {
@@ -188,6 +191,30 @@ function Chat({ user, handleLogout, darkMode, setDarkMode, customThemeColor, set
       setEditError('프로필 수정 실패: ' + err.message);
     }
     setEditLoading(false);
+  };
+
+  // 다른 사용자 프로필 보기
+  const handleUserProfileClick = (userData) => {
+    console.log('Clicked user data:', userData); // 디버깅용
+    
+    // 본인 프로필은 기존 방식으로 처리
+    if (userData.id === user.uid) {
+      setShowProfile(true);
+      return;
+    }
+    
+    // onlineUsers에서 가져온 데이터를 올바른 형식으로 변환
+    const formattedUserData = {
+      uid: userData.id,
+      nickname: userData.nickname,
+      email: userData.email,
+      photoURL: userData.photoURL,
+      lastSeen: userData.lastSeen
+    };
+    
+    console.log('Formatted user data:', formattedUserData); // 디버깅용
+    setSelectedUser(formattedUserData);
+    setShowUserProfile(true);
   };
 
   const [mainSidebarOpen, setMainSidebarOpen] = useState(false); // 왼쪽 메인 사이드바
@@ -352,7 +379,9 @@ function Chat({ user, handleLogout, darkMode, setDarkMode, customThemeColor, set
              lineHeight: '1.6',
              marginBottom: '40px'
            }}>
-             내용은 추후 변경
+             초초초 짱쩌는 업데이트 바로 상대 프로필 보!기!<br/>
+              -이제 상대의 프로필사진과 마지막 활동을 관찰 할 수 있으며
+              -상대가 자신의 자기소개와 상태메세지를 볼 수 있게됩니다.!!!!!!
            </div>
            
            <div style={{
@@ -772,25 +801,41 @@ function Chat({ user, handleLogout, darkMode, setDarkMode, customThemeColor, set
               </h4>
               <div style={{ flex: 1, overflowY: 'auto' }}>
                 {onlineUsers.map((onlineUser) => (
-                  <div key={onlineUser.id} style={{
-                    padding: '8px 12px',
-                    margin: '2px 0',
-                    backgroundColor: onlineUser.id === user.uid ? '#007bff' : (darkMode ? '#444' : '#f5f5f5'),
-                    color: onlineUser.id === user.uid ? 'white' : colors.sidebarText,
-                    borderRadius: '8px',
-                    fontSize: 12,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}>
-                                      <div style={{
-                    width: '8px',
-                    height: '8px',
-                    backgroundColor: (onlineUser.lastSeen && 
-                      new Date().getTime() - onlineUser.lastSeen.toDate().getTime() < 5 * 60 * 1000) 
-                      ? '#28a745' : '#dc3545',
-                    borderRadius: '50%'
-                  }}></div>
+                  <div 
+                    key={onlineUser.id} 
+                    onClick={() => handleUserProfileClick(onlineUser)}
+                    style={{
+                      padding: '8px 12px',
+                      margin: '2px 0',
+                      backgroundColor: onlineUser.id === user.uid ? '#007bff' : (darkMode ? '#444' : '#f5f5f5'),
+                      color: onlineUser.id === user.uid ? 'white' : colors.sidebarText,
+                      borderRadius: '8px',
+                      fontSize: 12,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (onlineUser.id !== user.uid) {
+                        e.target.style.backgroundColor = darkMode ? '#555' : '#e0e0e0';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (onlineUser.id !== user.uid) {
+                        e.target.style.backgroundColor = darkMode ? '#444' : '#f5f5f5';
+                      }
+                    }}
+                  >
+                    <div style={{
+                      width: '8px',
+                      height: '8px',
+                      backgroundColor: (onlineUser.lastSeen && 
+                        new Date().getTime() - onlineUser.lastSeen.toDate().getTime() < 5 * 60 * 1000) 
+                        ? '#28a745' : '#dc3545',
+                      borderRadius: '50%'
+                    }}></div>
                     {onlineUser.id === user.uid ? '나' : onlineUser.nickname}
                   </div>
                 ))}
@@ -874,6 +919,19 @@ function Chat({ user, handleLogout, darkMode, setDarkMode, customThemeColor, set
               // setUser는 App.js에서 관리되므로 여기서는 직접 업데이트하지 않음
               // 대신 Profile 컴포넌트 내부에서 상태를 관리하도록 수정
             }}
+          />
+        )}
+
+        {/* 다른 사용자 프로필 페이지 */}
+        {showUserProfile && selectedUser && (
+          <UserProfile 
+            userData={selectedUser}
+            onBack={() => {
+              setShowUserProfile(false);
+              setSelectedUser(null);
+            }}
+            darkMode={darkMode}
+            customThemeColor={customThemeColor}
           />
         )}
         
