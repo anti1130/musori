@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from 'firebase/firestore';
-import { doc, setDoc, deleteDoc, onSnapshot as onUserSnapshot } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, where, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Resizable } from 're-resizable';
 import { updateProfile } from 'firebase/auth';
@@ -9,6 +8,9 @@ import { storage, auth } from '../firebase';
 import Profile from './Profile';
 import UserProfile from './UserProfile';
 import RankDisplay from './RankDisplay';
+import ChatRoomList from './ChatRoomList';
+import { DEFAULT_ROOM_ID, ensureDefaultRoom } from '../utils/chatroomUtils';
+import { migrateMessagesToDefaultRoom } from '../utils/migrateMessages';
 
 async function uploadToCloudinary(file) {
   const formData = new FormData();
@@ -36,28 +38,53 @@ function Chat({ user, handleLogout, darkMode, setDarkMode, customThemeColor, set
   const [showProfile, setShowProfile] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  
+  // 채팅방 관련 상태
+  const [currentRoomId, setCurrentRoomId] = useState(DEFAULT_ROOM_ID);
+  const [showRoomList, setShowRoomList] = useState(false);
 
-  // 실시간 메시지 수신
+  // 기본 채팅방 생성 및 메시지 마이그레이션
+  useEffect(() => {
+    const initializeChatRooms = async () => {
+      await ensureDefaultRoom();
+      // 기존 메시지들을 "전체" 채팅방으로 마이그레이션
+      await migrateMessagesToDefaultRoom();
+    };
+    initializeChatRooms();
+  }, []);
+
+  // 실시간 메시지 수신 (채팅방별 필터링)
   useEffect(() => {
     if (!user) return;
 
-    const q = query(collection(db, 'messages'), orderBy('timestamp', 'asc'));
+    // roomId가 있는 메시지와 없는 메시지 모두 처리
+    const q = query(
+      collection(db, 'messages'), 
+      orderBy('timestamp', 'asc')
+    );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const messageList = [];
+      console.log('메시지 스냅샷 업데이트:', snapshot.size, '개 메시지');
       snapshot.forEach((doc) => {
-        messageList.push({ id: doc.id, ...doc.data() });
+        const messageData = { id: doc.id, ...doc.data() };
+        console.log('메시지 데이터:', messageData);
+        // roomId가 없거나 현재 채팅방의 메시지만 포함
+        if (!messageData.roomId || messageData.roomId === currentRoomId) {
+          messageList.push(messageData);
+        }
       });
+      console.log('필터링된 메시지:', messageList.length, '개');
       setMessages(messageList);
     });
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, currentRoomId]);
 
-  // 온라인 유저 실시간 감지 (모든 유저 표시)
+  // 모든 유저 실시간 감지 (온라인/오프라인 상태 포함)
   useEffect(() => {
     if (!user) return;
 
-    const unsubscribe = onUserSnapshot(collection(db, 'onlineUsers'), (snapshot) => {
+    const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
       const userList = [];
       
       snapshot.forEach((doc) => {
@@ -74,7 +101,7 @@ function Chat({ user, handleLogout, darkMode, setDarkMode, customThemeColor, set
   useEffect(() => {
     if (!user) return;
 
-    const userRef = doc(db, 'onlineUsers', user.uid);
+    const userRef = doc(db, 'users', user.uid);
     
     // 온라인 상태 설정 (타임스탬프 업데이트)
     setDoc(userRef, {
@@ -82,7 +109,7 @@ function Chat({ user, handleLogout, darkMode, setDarkMode, customThemeColor, set
       email: user.email,
       lastSeen: serverTimestamp(),
       isOnline: true
-    });
+    }, { merge: true });
 
     // 주기적으로 타임스탬프 업데이트 (활동 상태 유지)
     const updateTimestamp = () => {
@@ -101,21 +128,30 @@ function Chat({ user, handleLogout, darkMode, setDarkMode, customThemeColor, set
 
     // 브라우저 닫기 감지
     const handleBeforeUnload = () => {
-      deleteDoc(userRef);
+      setDoc(userRef, {
+        nickname: user.nickname,
+        email: user.email,
+        lastSeen: serverTimestamp(),
+        isOnline: false
+      }, { merge: true });
     };
 
     // 페이지 가시성 변경 감지
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        deleteDoc(userRef);
+        setDoc(userRef, {
+          nickname: user.nickname,
+          email: user.email,
+          lastSeen: serverTimestamp(),
+          isOnline: false
+        }, { merge: true });
       } else {
         setDoc(userRef, {
           nickname: user.nickname,
           email: user.email,
           lastSeen: serverTimestamp(),
           isOnline: true
-        });
-
+        }, { merge: true });
       }
     };
 
@@ -125,7 +161,12 @@ function Chat({ user, handleLogout, darkMode, setDarkMode, customThemeColor, set
 
     // 컴포넌트 언마운트 시 오프라인 상태로 변경
     return () => {
-      deleteDoc(userRef);
+      setDoc(userRef, {
+        nickname: user.nickname,
+        email: user.email,
+        lastSeen: serverTimestamp(),
+        isOnline: false
+      }, { merge: true });
       clearInterval(timestampInterval);
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -142,15 +183,22 @@ function Chat({ user, handleLogout, darkMode, setDarkMode, customThemeColor, set
     e.preventDefault();
     if (input.trim() === '' || !user) return;
 
+    console.log('메시지 전송 시도:', input, '채팅방:', currentRoomId);
+    
     try {
-      await addDoc(collection(db, 'messages'), {
+      const messageData = {
         text: input,
         userId: user.uid,
         nickname: user.nickname,
         photoURL: user.photoURL, // 프로필 사진 URL 저장
         createdAt: user.createdAt || serverTimestamp(), // 가입일 정보 추가
+        roomId: currentRoomId, // 채팅방 ID 추가
         timestamp: serverTimestamp()
-      });
+      };
+      console.log('전송할 메시지 데이터:', messageData);
+      
+      await addDoc(collection(db, 'messages'), messageData);
+      console.log('메시지 전송 성공');
       setInput('');
     } catch (error) {
       console.error('메시지 전송 에러:', error);
@@ -193,6 +241,12 @@ function Chat({ user, handleLogout, darkMode, setDarkMode, customThemeColor, set
       setEditError('프로필 수정 실패: ' + err.message);
     }
     setEditLoading(false);
+  };
+
+  // 채팅방 선택
+  const handleRoomSelect = (roomId) => {
+    setCurrentRoomId(roomId);
+    setShowRoomList(false);
   };
 
   // 다른 사용자 프로필 보기
@@ -418,7 +472,8 @@ function Chat({ user, handleLogout, darkMode, setDarkMode, customThemeColor, set
              lineHeight: '1.6',
              marginBottom: '40px'
            }}>
-             내용은 추후 변경
+             진심 개쩌는 업뎃 ㅇㅇ 진짜 이거 채팅창 방 나누기<br/>
+             이제 방나눠서 비공챗, 공개챗 방 만들 수 있고 자기가 원하는 사람 초대 가능<br/>
            </div>
            
            <div style={{
@@ -581,22 +636,7 @@ function Chat({ user, handleLogout, darkMode, setDarkMode, customThemeColor, set
               >
                 프로필 보기
               </button>
-              <button
-                onClick={() => setEditProfileOpen(true)}
-                style={{
-                  width: '100%',
-                  padding: '8px 0',
-                  background: darkMode ? '#333' : '#f5f5f5',
-                  color: colors.sidebarText,
-                  border: 'none',
-                  borderRadius: 6,
-                  fontSize: 14,
-                  cursor: 'pointer',
-                  marginBottom: 8
-                }}
-              >
-                프로필 수정
-              </button>
+
               <button
                 onClick={() => setDarkMode(!darkMode)}
                 style={{
@@ -661,7 +701,24 @@ function Chat({ user, handleLogout, darkMode, setDarkMode, customThemeColor, set
             borderTopLeftRadius: 8,
             borderTopRightRadius: 0,
           }}>
-            <h3 style={{ margin: 0, fontSize: 16, color: colors.headerText }}>채팅</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <h3 style={{ margin: 0, fontSize: 16, color: colors.headerText }}>채팅</h3>
+              <button
+                onClick={() => setShowRoomList(!showRoomList)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: '4px 8px',
+                  fontSize: '12px',
+                  color: colors.headerText,
+                  cursor: 'pointer',
+                  borderRadius: '4px',
+                  border: `1px solid ${colors.border}`
+                }}
+              >
+                채팅방 선택
+              </button>
+            </div>
             {/* 채팅창 내 헤더 오른쪽 햄버거 버튼 (항상 보임) */}
             <button
               onClick={() => setUserSidebarOpen((open) => !open)}
@@ -687,6 +744,17 @@ function Chat({ user, handleLogout, darkMode, setDarkMode, customThemeColor, set
           </div>
           {/* 메인 컨텐츠 */}
           <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+            {/* 채팅방 목록 */}
+            {showRoomList && (
+              <ChatRoomList
+                currentRoomId={currentRoomId}
+                onRoomSelect={handleRoomSelect}
+                darkMode={darkMode}
+                customThemeColor={customThemeColor}
+                onClose={() => setShowRoomList(false)}
+                currentUser={user}
+              />
+            )}
             {/* 채팅창 */}
             <div style={{ 
               flex: 1,
