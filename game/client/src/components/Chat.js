@@ -20,7 +20,7 @@ async function uploadToCloudinary(file) {
   return data.secure_url;
 }
 
-function Chat({ user, handleLogout, darkMode, setDarkMode }) {
+function Chat({ user, handleLogout, darkMode, setDarkMode, customThemeColor, setCustomThemeColor, notificationSettings, setNotificationSettings }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [onlineUsers, setOnlineUsers] = useState([]);
@@ -193,7 +193,7 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
   const [mainSidebarOpen, setMainSidebarOpen] = useState(false); // 왼쪽 메인 사이드바
   const [userSidebarOpen, setUserSidebarOpen] = useState(false); // 채팅창 내 유저 사이드바 상태
 
-  // 스타일 색상 변수
+  // 스타일 색상 변수 (테마 색상 적용)
   const colors = {
     bg: darkMode ? '#181a1b' : '#f8f9fa',
     chatBg: darkMode ? '#181a1b' : '#fff',
@@ -213,6 +213,7 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
     underbarBorder: darkMode ? '#333' : '#eee',
     nickname: darkMode ? '#ffe066' : '#333',
     border: darkMode ? '#666' : '#ccc',
+    buttonBg: darkMode ? '#444' : customThemeColor,
   };
 
   // 사용자 정보가 있으면 바로 채팅 표시
@@ -332,7 +333,9 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
              lineHeight: '1.6',
              marginBottom: '40px'
            }}>
-             내용은 추후 변경
+             1. 입력창 ui 개선<br/>
+             2. 테마 색 선택 기능 추가<br/>
+             3. 알림 설정 ui 추가(기능은 아직 없음)<br/>
            </div>
            
            <div style={{
@@ -862,9 +865,14 @@ function Chat({ user, handleLogout, darkMode, setDarkMode }) {
             user={user} 
             onBack={() => setShowProfile(false)}
             darkMode={darkMode}
+            customThemeColor={customThemeColor}
+            setCustomThemeColor={setCustomThemeColor}
+            notificationSettings={notificationSettings}
+            setNotificationSettings={setNotificationSettings}
             onUserUpdate={(updatedUser) => {
               // 사용자 정보 업데이트
-              setUser(updatedUser);
+              // setUser는 App.js에서 관리되므로 여기서는 직접 업데이트하지 않음
+              // 대신 Profile 컴포넌트 내부에서 상태를 관리하도록 수정
             }}
           />
         )}

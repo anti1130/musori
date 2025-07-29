@@ -12,16 +12,67 @@ function App() {
   const [currentPage, setCurrentPage] = useState('login');
   const [user, setUser] = useState(null);
   const [darkMode, setDarkMode] = useState(false);
-  const fetchUserDarkMode = async (uid) => {
+  const [customThemeColor, setCustomThemeColor] = useState('#007bff');
+  const [notificationSettings, setNotificationSettings] = useState({
+    messageNotifications: true,
+    mentionNotifications: true,
+    summaryNotifications: false
+  });
+
+  const fetchUserSettings = async (uid) => {
     try {
       const userDoc = await getDoc(doc(db, 'users', uid));
-      if (userDoc.exists() && typeof userDoc.data().darkMode === 'boolean') {
-        setDarkMode(userDoc.data().darkMode);
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        
+        // 다크모드 설정
+        if (typeof userData.darkMode === 'boolean') {
+          setDarkMode(userData.darkMode);
+        } else {
+          setDarkMode(false);
+        }
+
+        // 테마 색상 설정
+        if (userData.customThemeColor) {
+          setCustomThemeColor(userData.customThemeColor);
+        } else {
+          setCustomThemeColor('#007bff');
+        }
+
+        // 알림 설정
+        if (userData.notificationSettings) {
+          setNotificationSettings(userData.notificationSettings);
+        } else {
+          setNotificationSettings({
+            messageNotifications: true,
+            mentionNotifications: true,
+            summaryNotifications: false
+          });
+        }
+
+        // 사용자 정보 업데이트 (statusMessage, bio 포함)
+        setUser(prevUser => ({
+          ...prevUser,
+          statusMessage: userData.statusMessage || '',
+          bio: userData.bio || ''
+        }));
       } else {
         setDarkMode(false);
+        setCustomThemeColor('#007bff');
+        setNotificationSettings({
+          messageNotifications: true,
+          mentionNotifications: true,
+          summaryNotifications: false
+        });
       }
     } catch (e) {
       setDarkMode(false);
+      setCustomThemeColor('#007bff');
+      setNotificationSettings({
+        messageNotifications: true,
+        mentionNotifications: true,
+        summaryNotifications: false
+      });
     }
   };
 
@@ -34,11 +85,13 @@ function App() {
           email: firebaseUser.email,
           nickname: firebaseUser.displayName || firebaseUser.email.split('@')[0],
           uid: firebaseUser.uid,
-          photoURL: firebaseUser.photoURL // 추가!
+          photoURL: firebaseUser.photoURL,
+          statusMessage: '',
+          bio: ''
         };
         setUser(userData);
         setIsLoggedIn(true);
-        await fetchUserDarkMode(firebaseUser.uid);
+        await fetchUserSettings(firebaseUser.uid);
       } else {
         // 로그아웃된 상태
         setUser(null);
@@ -92,6 +145,26 @@ function App() {
     }
   };
 
+  // 테마 색상 업데이트
+  const handleSetCustomThemeColor = async (color) => {
+    setCustomThemeColor(color);
+    if (user && user.uid) {
+      try {
+        await setDoc(doc(db, 'users', user.uid), { customThemeColor: color }, { merge: true });
+      } catch (e) {}
+    }
+  };
+
+  // 알림 설정 업데이트
+  const handleSetNotificationSettings = async (settings) => {
+    setNotificationSettings(settings);
+    if (user && user.uid) {
+      try {
+        await setDoc(doc(db, 'users', user.uid), { notificationSettings: settings }, { merge: true });
+      } catch (e) {}
+    }
+  };
+
   // 로그인된 경우 채팅 페이지 표시
   if (isLoggedIn && user) {
     return (
@@ -108,7 +181,17 @@ function App() {
         }}>
           {/* 헤더바 내용 비움 */}
         </div>
-        <Chat user={user} key={user?.email || 'anonymous'} handleLogout={handleLogout} darkMode={darkMode} setDarkMode={handleSetDarkMode} />
+        <Chat 
+          user={user} 
+          key={user?.email || 'anonymous'} 
+          handleLogout={handleLogout} 
+          darkMode={darkMode} 
+          setDarkMode={handleSetDarkMode}
+          customThemeColor={customThemeColor}
+          setCustomThemeColor={handleSetCustomThemeColor}
+          notificationSettings={notificationSettings}
+          setNotificationSettings={handleSetNotificationSettings}
+        />
       </div>
     );
   }

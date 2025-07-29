@@ -138,7 +138,8 @@ function Register({ onRegister, onSwitchToLogin }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             style={{
-              width: '95%',
+              width: '90%',
+              maxWidth: '1000px',
               padding: '10px',
               border: '1px solid #ddd',
               borderRadius: '4px',
@@ -156,7 +157,8 @@ function Register({ onRegister, onSwitchToLogin }) {
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
             style={{
-              width: '95%',
+              width: '90%',
+              maxWidth: '1000px',
               padding: '10px',
               border: '1px solid #ddd',
               borderRadius: '4px',
@@ -174,7 +176,8 @@ function Register({ onRegister, onSwitchToLogin }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             style={{
-              width: '95%',
+              width: '90%',
+              maxWidth: '1000px',
               padding: '10px',
               border: '1px solid #ddd',
               borderRadius: '4px',
@@ -192,7 +195,8 @@ function Register({ onRegister, onSwitchToLogin }) {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             style={{
-              width: '95%',
+              width: '90%',
+              maxWidth: '1000px',
               padding: '10px',
               border: '1px solid #ddd',
               borderRadius: '4px',
@@ -207,7 +211,8 @@ function Register({ onRegister, onSwitchToLogin }) {
           type="submit"
           disabled={loading}
           style={{
-            width: '100%',
+            width: '90%',
+            maxWidth: '1000px',
             padding: '12px',
             backgroundColor: loading ? '#ccc' : '#28a745',
             color: 'white',

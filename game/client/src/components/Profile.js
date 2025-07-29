@@ -3,8 +3,10 @@ import { auth, db, storage } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import ThemeSettings from './ThemeSettings';
+import NotificationSettings from './NotificationSettings';
 
-function Profile({ user, onBack, darkMode, onUserUpdate }) {
+function Profile({ user, onBack, darkMode, customThemeColor, setCustomThemeColor, notificationSettings, setNotificationSettings, onUserUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
   const [activityScore, setActivityScore] = useState(0);
   const [newNickname, setNewNickname] = useState(user.nickname || '');
@@ -14,27 +16,41 @@ function Profile({ user, onBack, darkMode, onUserUpdate }) {
   const [editError, setEditError] = useState('');
   const [statusMessage, setStatusMessage] = useState(user.statusMessage || '');
   const [bio, setBio] = useState(user.bio || '');
+  
+  // 현재 표시할 사용자 정보 (업데이트된 정보 반영)
+  const [currentUser, setCurrentUser] = useState(user);
+  
+  // 테마 및 알림 설정 (App.js에서 전달받은 값 사용)
+  const [showThemeSettings, setShowThemeSettings] = useState(false);
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
 
-  // 다크모드 색상
+  // 다크모드 색상 (테마 색상 적용)
   const colors = {
     bg: darkMode ? '#1a1a1a' : '#ffffff',
     text: darkMode ? '#ffffff' : '#000000',
     headerBg: darkMode ? '#2d2d2d' : '#f8f9fa',
     headerText: darkMode ? '#ffffff' : '#000000',
     border: darkMode ? '#444' : '#ddd',
-    buttonBg: darkMode ? '#444' : '#007bff',
+    buttonBg: darkMode ? '#444' : customThemeColor,
     buttonText: darkMode ? '#ffffff' : '#ffffff',
     inputBg: darkMode ? '#333' : '#ffffff',
     inputText: darkMode ? '#ffffff' : '#000000',
     inputBorder: darkMode ? '#555' : '#ddd',
     scoreBg: darkMode ? '#2d2d2d' : '#f8f9fa',
-    scoreText: darkMode ? '#FFD700' : '#007bff'
+    scoreText: darkMode ? '#FFD700' : customThemeColor
   };
 
   // 활동 점수 계산 (임시)
   useEffect(() => {
     setActivityScore(8500);
   }, []);
+
+  // user prop이 변경될 때 statusMessage와 bio 업데이트
+  useEffect(() => {
+    setStatusMessage(user.statusMessage || '');
+    setBio(user.bio || '');
+    setCurrentUser(user);
+  }, [user]);
 
   // 사진 변경 처리
   const handlePhotoChange = (e) => {
@@ -72,10 +88,10 @@ function Profile({ user, onBack, darkMode, onUserUpdate }) {
       });
 
       // Firestore 업데이트
-      const userRef = doc(db, 'users', user.uid);
+      const userRef = doc(db, 'users', currentUser.uid);
       await setDoc(userRef, {
         nickname: newNickname,
-        email: user.email,
+        email: currentUser.email,
         photoURL: photoURL,
         statusMessage: statusMessage,
         bio: bio,
@@ -84,26 +100,46 @@ function Profile({ user, onBack, darkMode, onUserUpdate }) {
 
       // 사용자 정보 업데이트
       const updatedUser = {
-        ...user,
+        ...currentUser,
         nickname: newNickname,
         photoURL: photoURL,
         statusMessage: statusMessage,
         bio: bio
       };
 
+      // 내부 상태 업데이트
+      setCurrentUser(updatedUser);
+
       setIsEditing(false);
       setNewPhoto(null);
       setPhotoPreview(null);
-      
-      // 부모 컴포넌트에 업데이트된 사용자 정보 전달
-      if (onUserUpdate) {
-        onUserUpdate(updatedUser);
-      }
     } catch (error) {
       setEditError('프로필 업데이트 중 오류가 발생했습니다.');
       console.error('Profile update error:', error);
     } finally {
       setEditLoading(false);
+    }
+  };
+
+  // 테마 설정 저장
+  const handleThemeSave = async () => {
+    try {
+      // App.js의 함수 사용
+      await setCustomThemeColor(customThemeColor);
+      setShowThemeSettings(false);
+    } catch (error) {
+      console.error('Theme save error:', error);
+    }
+  };
+
+  // 알림 설정 저장
+  const handleNotificationSave = async () => {
+    try {
+      // App.js의 함수 사용
+      await setNotificationSettings(notificationSettings);
+      setShowNotificationSettings(false);
+    } catch (error) {
+      console.error('Notification save error:', error);
     }
   };
 
@@ -197,9 +233,9 @@ function Profile({ user, onBack, darkMode, onUserUpdate }) {
             overflow: 'hidden',
             border: `3px solid ${colors.border}`
           }}>
-            {user.photoURL ? (
+            {currentUser.photoURL ? (
               <img 
-                src={user.photoURL} 
+                src={currentUser.photoURL} 
                 alt="프로필" 
                 style={{ 
                   width: '100%', 
@@ -209,7 +245,7 @@ function Profile({ user, onBack, darkMode, onUserUpdate }) {
                 }} 
               />
             ) : (
-              user.nickname?.[0]?.toUpperCase() || 'U'
+              currentUser.nickname?.[0]?.toUpperCase() || 'U'
             )}
           </div>
 
@@ -220,7 +256,7 @@ function Profile({ user, onBack, darkMode, onUserUpdate }) {
             color: colors.text,
             marginBottom: '8px'
           }}>
-            {user.nickname}
+            {currentUser.nickname}
           </div>
 
           {/* 상태 메시지 */}
@@ -241,7 +277,7 @@ function Profile({ user, onBack, darkMode, onUserUpdate }) {
             color: darkMode ? '#aaa' : '#666',
             marginBottom: '4px'
           }}>
-            {user.email}
+            {currentUser.email}
           </div>
 
           {/* 가입일 (임시) */}
@@ -334,36 +370,42 @@ function Profile({ user, onBack, darkMode, onUserUpdate }) {
             flexDirection: 'column',
             gap: '12px'
           }}>
-            <button style={{
-              background: 'none',
-              border: 'none',
-              color: colors.text,
-              textAlign: 'left',
-              padding: '12px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
+            <button 
+              onClick={() => setShowThemeSettings(true)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: colors.text,
+                textAlign: 'left',
+                padding: '12px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}
+            >
               테마 설정
               <span>→</span>
             </button>
             
-            <button style={{
-              background: 'none',
-              border: 'none',
-              color: colors.text,
-              textAlign: 'left',
-              padding: '12px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
+            <button 
+              onClick={() => setShowNotificationSettings(true)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: colors.text,
+                textAlign: 'left',
+                padding: '12px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}
+            >
               알림 설정
               <span>→</span>
             </button>
@@ -410,7 +452,10 @@ function Profile({ user, onBack, darkMode, onUserUpdate }) {
             maxWidth: '400px',
             maxHeight: '80vh',
             overflowY: 'auto',
-            margin: '20px'
+            margin: '20px',
+            boxSizing: 'border-box',
+            display: 'flex',
+            flexDirection: 'column'
           }}>
             <div style={{
               display: 'flex',
@@ -430,8 +475,8 @@ function Profile({ user, onBack, darkMode, onUserUpdate }) {
                   setIsEditing(false);
                   setNewPhoto(null);
                   setPhotoPreview(null);
-                  setStatusMessage(user.statusMessage || '');
-                  setBio(user.bio || '');
+                  setStatusMessage(currentUser.statusMessage || '');
+                  setBio(currentUser.bio || '');
                 }}
                 style={{
                   background: 'none',
@@ -445,7 +490,7 @@ function Profile({ user, onBack, darkMode, onUserUpdate }) {
               </button>
             </div>
 
-            <form onSubmit={handleProfileUpdate}>
+            <form onSubmit={handleProfileUpdate} style={{ flex: 1, width: '100%' }}>
               {/* 프로필 사진 */}
               <div style={{
                 display: 'flex',
@@ -477,9 +522,9 @@ function Profile({ user, onBack, darkMode, onUserUpdate }) {
                         borderRadius: '50%' 
                       }} 
                     />
-                  ) : user.photoURL ? (
+                  ) : currentUser.photoURL ? (
                     <img 
-                      src={user.photoURL} 
+                      src={currentUser.photoURL} 
                       alt="프로필" 
                       style={{ 
                         width: '100%', 
@@ -489,7 +534,7 @@ function Profile({ user, onBack, darkMode, onUserUpdate }) {
                       }} 
                     />
                   ) : (
-                    user.nickname?.[0]?.toUpperCase() || 'U'
+                    currentUser.nickname?.[0]?.toUpperCase() || 'U'
                   )}
                 </div>
                 <div style={{ flex: 1 }}>
@@ -530,7 +575,7 @@ function Profile({ user, onBack, darkMode, onUserUpdate }) {
                   value={newNickname}
                   onChange={e => setNewNickname(e.target.value)}
                   style={{
-                    width: '100%',
+                    width: '90%',
                     padding: '8px 12px',
                     borderRadius: '6px',
                     border: `1px solid ${colors.inputBorder}`,
@@ -558,7 +603,7 @@ function Profile({ user, onBack, darkMode, onUserUpdate }) {
                   onChange={e => setStatusMessage(e.target.value.slice(0, 50))}
                   placeholder="상태 메시지를 설정해보세요"
                   style={{
-                    width: '100%',
+                    width: '90%',
                     padding: '8px 12px',
                     borderRadius: '6px',
                     border: `1px solid ${colors.inputBorder}`,
@@ -586,7 +631,7 @@ function Profile({ user, onBack, darkMode, onUserUpdate }) {
                   placeholder="자기소개를 작성해보세요"
                   rows={4}
                   style={{
-                    width: '100%',
+                    width: '90%',
                     padding: '8px 12px',
                     borderRadius: '6px',
                     border: `1px solid ${colors.inputBorder}`,
@@ -622,8 +667,8 @@ function Profile({ user, onBack, darkMode, onUserUpdate }) {
                     setIsEditing(false);
                     setNewPhoto(null);
                     setPhotoPreview(null);
-                    setStatusMessage(user.statusMessage || '');
-                    setBio(user.bio || '');
+                    setStatusMessage(currentUser.statusMessage || '');
+                    setBio(currentUser.bio || '');
                   }}
                   style={{
                     padding: '8px 16px',
@@ -657,6 +702,33 @@ function Profile({ user, onBack, darkMode, onUserUpdate }) {
             </form>
           </div>
         </div>
+      )}
+
+      {/* 테마 설정 모달 */}
+      {showThemeSettings && (
+        <ThemeSettings
+          customThemeColor={customThemeColor}
+          onColorChange={setCustomThemeColor}
+          onSave={handleThemeSave}
+          onCancel={() => setShowThemeSettings(false)}
+          darkMode={darkMode}
+        />
+      )}
+
+      {/* 알림 설정 모달 */}
+      {showNotificationSettings && (
+        <NotificationSettings
+          notificationSettings={notificationSettings}
+          onSettingChange={(key, value) => {
+            setNotificationSettings(prev => ({
+              ...prev,
+              [key]: value
+            }));
+          }}
+          onSave={handleNotificationSave}
+          onCancel={() => setShowNotificationSettings(false)}
+          darkMode={darkMode}
+        />
       )}
     </div>
   );
